@@ -2,8 +2,11 @@
 GET http://localhost:3000/
 ###
 
-GET http://localhost:3000/url
+GET http://localhost:3000/temps
 
 ###
 
+POST http://localhost:3000/post
+
+###
 

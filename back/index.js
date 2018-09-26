@@ -1,33 +1,38 @@
 const express = require("express");
-const Influx = require("influx");
+const Influx     = require("influx");
+const cors       = require("cors");
+const bodyParser = require('body-parser')
 
 const influx = new Influx.InfluxDB({
-    host    : 'localhost',
-    database: 'testdb',
+    host    : "localhost",
+    database: "testdb",
     schema  : [
         {
-            measurement: 'temp',
+            measurement: "temp",
             fields     : {
-                loc : Influx.FieldType.STRING,
                 temp: Influx.FieldType.FLOAT
             },
             tags: [
-                'temp'
+                "loc"
             ]
         }
     ]
 });
 
-const back        = express();
-let   endpoints   = { get: [], post: [] };
-      addEndpoint = (type, url, desc) => {
+const back      = express();
+let   endpoints = { get: [], post: [] };
+back.use(cors());
+back.use(bodyParser.json());
+
+addEndpoint = (type, url, desc) => {
     endpoints[type].push({ url, desc });
 }
 
 influx.getDatabaseNames()
     .then(names => {
-        if (!names.includes('testdb')) {
-            return influx.createDatabase('testdb');
+        if (!names.includes("testdb")) {
+            console.log("create database...");
+            return influx.createDatabase("testdb");
         }
     })
     .then(() => {
@@ -37,7 +42,7 @@ influx.getDatabaseNames()
     })
 
 addEndpoint("get", "/", "get endpoints");
-back.get('/', (req, res) => {
+back.get("/", (req, res) => {
     let s = "";
     [endpoints.get, endpoints.post].map(ep =>
         ep.map(e => {
@@ -48,7 +53,7 @@ back.get('/', (req, res) => {
 });
 
 addEndpoint("get", "/temps", "get 50 latest measurements");
-back.get('/temps', (req, res) => {
+back.get("/temps", (req, res) => {
     influx.query(`
         select * from temp
         order by time desc
@@ -59,4 +64,20 @@ back.get('/temps', (req, res) => {
             console.log("\n\n\n\n\n", err.stack);
             res.status(500).send("rip")
         })
+});
+
+addEndpoint("post", "/post", "add test measurement");
+back.post("/post", (req, res) => {
+    influx.writePoints([
+        {
+            measurement: 'temp',
+            tags       : { loc: req.body.loc },
+            fields     : { temp: req.body.temp },
+        }
+    ]).then(result => {
+        res.status(200).send("ok");
+    }).catch(err => {
+        console.log("\n\n\n\n\n", err.stack);
+        res.status(500).send("rip")
+    })
 });
