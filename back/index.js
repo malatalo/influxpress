@@ -20,7 +20,7 @@ const influx = new Influx.InfluxDB({
 });
 
 const back      = express();
-let   endpoints = { get: [], post: [] };
+let   endpoints = { get: [], post: [], delete: [] };
 back.use(cors());
 back.use(bodyParser.json());
 
@@ -44,7 +44,7 @@ influx.getDatabaseNames()
 addEndpoint("get", "/", "get endpoints");
 back.get("/", (req, res) => {
     let s = "";
-    [endpoints.get, endpoints.post].map(ep =>
+    [endpoints.get, endpoints.post, endpoints.delete].map(ep =>
         ep.map(e => {
             s += e.url + " - " + e.desc + "\n\n";
         })
@@ -56,6 +56,7 @@ addEndpoint("get", "/temps", "get 50 latest measurements");
 back.get("/temps", (req, res) => {
     influx.query(`
         select * from temp
+        where temp > 0
         order by time desc
         limit 50
     `).then(result => {
@@ -80,4 +81,17 @@ back.post("/post", (req, res) => {
         console.log("\n\n\n\n\n", err.stack);
         res.status(500).send("rip")
     })
+});
+
+addEndpoint("delete", "/delete", "delete measurement");
+back.delete("/delete", (req, res) => {
+    console.log(req.body.time);
+    influx.query(`
+        DELETE FROM temp WHERE time=$time_value
+    `, { fields: {time_value: req.body.time} }).then(result => {
+            res.json(result)
+        }).catch(err => {
+            console.log("\n\n\n\n\n", err.stack);
+            res.status(500).send("rip")
+        });
 });

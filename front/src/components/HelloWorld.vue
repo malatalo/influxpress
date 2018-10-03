@@ -8,8 +8,9 @@
             <button v-on:click="getMessage">Get Messages</button>
             <button v-on:click="sendMessage">Send Message</button>
             <p>{{ stuff.message }}</p>
+            <p>&nbsp;</p>
         </div>
-        <p v-for="d in stuff.temps">
+        <p v-for="d in stuff.temps" :key="d.time">
             {{ d.time + ", " + d.loc + ", " + d.temp }}
         </p>
     </div>
@@ -25,7 +26,7 @@ export default {
   data: function () {
     return {
         stuff: {    
-            message  : ".",
+            message  : "\xa0",
             locTitle : "Location",
             loc      : "",
             tempTitle: "Temperature",
@@ -39,8 +40,9 @@ export default {
   },
   methods: {
     sendMessage: function() {
+        if(!this.stuff.loc || !this.stuff.temp){ return }
         this.stuff.message = "Sent: " + this.stuff.loc + ", " + this.stuff.temp;
-        setTimeout(() => { this.stuff.message = "." }, 5000);
+        setTimeout(() => { this.stuff.message = "\xa0" }, 5000);
         let data = JSON.stringify({
             loc : this.stuff.loc,
             temp: this.stuff.temp
